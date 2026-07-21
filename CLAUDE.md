@@ -11,7 +11,7 @@ built on Snowflake (Deposit → Deterge → Distribute medallion architecture,
 dbt-managed from Deterge up). This repo is the KPI Library workstream:
 governed KPI definitions plus a Streamlit-in-Snowflake reference dashboard
 that reads from the Distribute layer. **It does not contain the dbt models
-themselves** — those live in the main platform repo.
+themselves** — those live in the main platform repo - ditteau_data_transform.
 
 ## Source of truth
 
