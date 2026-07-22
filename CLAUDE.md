@@ -59,28 +59,39 @@ the gap.
     verified against a real, built model. Use this prefix instead of
     presenting an authored definition as confirmed fact.
 
-## Known gaps (as of the last reconciliation)
+## Known gaps (as of 2026-07-22 reconciliation)
 
-- `snap_cohort_milestone` is unbuilt — blocks the Cross-Domain dashboard
-  tab and every Cross-Domain KPI that targets it.
-- `mart_enrollment_demographics` is not in the documented mart inventory.
-  Confirmed columns (from dashboard code): `total_headcount`, `urm_count`,
-  `first_gen_count`, `fulltime_count`, by `academic_year`. No age
-  dimension exists despite one catalog KPI's title implying one.
-- `mart_scorecard_program_outcomes` — the entire Benchmarking area
-  (7 rows) targets this mart, which doesn't exist: no schema, no dbt
-  model, zero prior references anywhere in `kpi_library_dashboard.py`.
-  Treat every Benchmarking KPI as Roadmap until this changes.
-- `mart_retention_cohort_summary` — conflicting signals: several catalog
-  rows call it unbuilt as of 2026-06-30, but `kpi_library_dashboard.py`
-  queries it successfully with `program_name`, `yr1_retention_rate`,
-  `yr6_grad_rate`, `cohort_size`, `has_yr1_data`. Reconcile with WDT
-  before trusting either signal as-is.
-- "Retention Risk Early Warning Indicators" is cataloged against
-  `mart_retention_cohort_summary` (lagging, cohort-level data) but
-  conceptually belongs on `mart_student_at_risk`
-  (`is_at_risk`, `risk_tier`, `risk_factor_count`) — likely a
-  mart-assignment error, not yet resolved.
+**Unbuilt / Stub Models:**
+- `snap_cohort_milestone` — unbuilt; blocks Cross-Domain dashboard tab
+  and all Cross-Domain KPIs that target it.
+- `mart_ipeds_reporting` — stub returning zero rows; awaiting
+  stg_ipeds__peer_benchmarks provisioning.
+
+**Data Gaps in Built Models:**
+- `snap_aid_term` — PowerFAIDS integration pending; affects
+  `coa_amount`, `efc_amount` (unmet need calculations) in
+  `mart_aid_leveraging`. Core leveraging metrics (merit/need split, aid
+  band yield) are functional.
+- `mart_enrollment_census_ntr` — DEMEAU synthetic data has zero billing
+  values (`account_value=0` in sbcust_rec → `gross_tuition_billed=0`),
+  but model logic is complete and will activate with production school data.
+- NSC integration pending — affects transfer-out tracking in
+  `snap_cohort_milestone` and `mart_retention_cohort_summary`. Currently
+  transfer-outs are counted with stop-outs.
+
+**Schema Gaps:**
+- Age demographics — `mart_enrollment_demographics` exists and is
+  functional (columns: `total_headcount`, `urm_count`, `first_gen_count`,
+  `fulltime_count` by `academic_year`), but no `age_band` dimension
+  exists. Row 131 title implies age breakdown but only enrollment intensity
+  (full-time rate) is computable.
+
+**Previously Undocumented but Functional:**
+- `mart_enrollment_demographics` — built and functional; not in prior
+  mart inventory.
+- `mart_scorecard_program_outcomes` — built and functional; powers
+  Benchmarking dashboard tab with College Scorecard data (earnings, debt,
+  default rates by program).
 
 ## Governance gates — do not route around these
 

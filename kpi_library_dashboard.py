@@ -813,30 +813,101 @@ elif area == "Cross-Domain":
 elif area == "Benchmarking":
     logo_header("Benchmarking")
 
-    st.info(
-        "**Roadmap — not yet live.** Every KPI on this tab targets "
-        "`mart_scorecard_program_outcomes`, which does not yet exist in the "
-        "Distribute schema and has no built columns to query. Per the KPI "
-        "Library Guidelines (Section E), an unbuilt-mart KPI ships as a "
-        "Roadmap tile — never a zero or a fabricated number standing in for "
-        "missing data.",
-        icon="🚧",
-    )
+    st.markdown("""
+    <div class="kpi-callout">
+        <strong>College Scorecard Benchmarks</strong> — Program-level outcomes from the U.S. Department of Education.
+        Includes earnings, debt, default rates, and repayment metrics by CIP code and credential level.
+    </div>
+    """, unsafe_allow_html=True)
 
-    st.markdown("### Planned KPIs / Dashboards")
-    df_benchmarking = pd.DataFrame([
-        {"Title": "Program Earnings vs. Debt ROI",             "Type": "Dashboard", "Category": "Financial"},
-        {"Title": "Post-Graduation Earnings Benchmarking",     "Type": "Dashboard", "Category": "Strategic"},
-        {"Title": "Pell vs. Non-Pell Earnings Gap",            "Type": "KPI",       "Category": "Compliance"},
-        {"Title": "Student Debt Burden vs. Peers",              "Type": "Dashboard", "Category": "Strategic"},
-        {"Title": "Loan Default Rate (College Scorecard)",      "Type": "KPI",       "Category": "Compliance"},
-        {"Title": "Borrower-Based Repayment Rate (BBRR)",       "Type": "KPI",       "Category": "Compliance"},
-        {"Title": "Earnings-to-Debt Ratio by Program",          "Type": "KPI",       "Category": "Compliance"},
-    ])
-    st.dataframe(df_benchmarking, use_container_width=True, hide_index=True)
+    # Program earnings vs debt ROI
+    df_scorecard = run_query(f"""
+        SELECT
+            cip_desc,
+            credential_level_desc,
+            earn_median_4yr,
+            debt_at_completion,
+            CASE
+                WHEN debt_at_completion > 0 THEN earn_median_4yr / debt_at_completion
+                ELSE NULL
+            END AS earn_to_debt_ratio,
+            earn_vs_national_pct
+        FROM {DB}.{SCHEMA}.MART_SCORECARD_PROGRAM_OUTCOMES
+        WHERE is_own_institution = TRUE
+          AND is_suppressed = FALSE
+          AND earn_median_4yr IS NOT NULL
+        ORDER BY earn_to_debt_ratio DESC NULLS LAST
+        LIMIT 10
+    """)
 
-    st.caption(
-        "mart_scorecard_program_outcomes · not in the documented mart inventory — "
-        "confirm schema, source feed (College Scorecard / NSLDS), and refresh "
-        "cadence with data engineering before building against it."
-    )
+    if not df_scorecard.empty:
+        st.markdown("### Program Earnings vs. Debt ROI")
+        st.markdown("Top 10 programs by earnings-to-debt ratio")
+
+        fig = go.Figure()
+        fig.add_trace(go.Bar(
+            x=df_scorecard["cip_desc"],
+            y=df_scorecard["earn_to_debt_ratio"],
+            marker=dict(color=BLUE),
+            text=df_scorecard["earn_to_debt_ratio"].apply(lambda x: f"{x:.2f}x" if pd.notna(x) else ""),
+            textposition="outside",
+            name="Earn-to-Debt Ratio"
+        ))
+        fig.update_layout(
+            height=400,
+            xaxis_title="Program",
+            yaxis_title="Earnings / Debt Ratio",
+            showlegend=False
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+        st.markdown("### Earnings vs. National Benchmarks")
+        c1, c2, c3 = st.columns(3)
+        above_nat = (df_scorecard["earn_vs_national_pct"] > 0).sum()
+        below_nat = (df_scorecard["earn_vs_national_pct"] < 0).sum()
+        with c1:
+            st.metric("Programs Above National Median", above_nat)
+        with c2:
+            st.metric("Programs Below National Median", below_nat)
+        with c3:
+            avg_vs_nat = df_scorecard["earn_vs_national_pct"].mean()
+            st.metric("Avg vs National", fmt_pct(avg_vs_nat, decimals=1))
+
+    # Pell vs Non-Pell earnings gap
+    df_pell_gap = run_query(f"""
+        SELECT
+            cip_desc,
+            earn_median_pell_4yr,
+            earn_median_nopell_4yr,
+            earn_median_nopell_4yr - earn_median_pell_4yr AS earnings_gap
+        FROM {DB}.{SCHEMA}.MART_SCORECARD_PROGRAM_OUTCOMES
+        WHERE is_own_institution = TRUE
+          AND is_suppressed = FALSE
+          AND earn_median_pell_4yr IS NOT NULL
+          AND earn_median_nopell_4yr IS NOT NULL
+        ORDER BY earnings_gap DESC
+        LIMIT 10
+    """)
+
+    if not df_pell_gap.empty:
+        st.markdown("### Pell vs. Non-Pell Earnings Gap")
+        st.markdown("Programs with largest earnings gaps (equity concern)")
+
+        fig = go.Figure()
+        fig.add_trace(go.Bar(
+            x=df_pell_gap["cip_desc"],
+            y=df_pell_gap["earnings_gap"],
+            marker=dict(color=MAROON),
+            text=df_pell_gap["earnings_gap"].apply(lambda x: f"${x:,.0f}" if pd.notna(x) else ""),
+            textposition="outside",
+            name="Earnings Gap"
+        ))
+        fig.update_layout(
+            height=400,
+            xaxis_title="Program",
+            yaxis_title="Non-Pell Earnings - Pell Earnings ($)",
+            showlegend=False
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+    st.caption("mart_scorecard_program_outcomes · distribute/marts/summaries/enrollment/mart_scorecard_program_outcomes")
