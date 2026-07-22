@@ -826,17 +826,15 @@ elif area == "Benchmarking":
             cip_desc,
             credential_level_desc,
             earn_median_4yr,
-            debt_at_completion,
-            CASE
-                WHEN debt_at_completion > 0 THEN earn_median_4yr / debt_at_completion
-                ELSE NULL
-            END AS earn_to_debt_ratio,
+            debt_median_all,
+            earnings_to_debt_ratio_4yr AS earn_to_debt_ratio,
             earn_vs_national_pct
         FROM {DB}.{SCHEMA}.MART_SCORECARD_PROGRAM_OUTCOMES
         WHERE is_own_institution = TRUE
           AND is_suppressed = FALSE
           AND earn_median_4yr IS NOT NULL
-        ORDER BY earn_to_debt_ratio DESC NULLS LAST
+          AND earnings_to_debt_ratio_4yr IS NOT NULL
+        ORDER BY earnings_to_debt_ratio_4yr DESC NULLS LAST
         LIMIT 10
     """)
 
