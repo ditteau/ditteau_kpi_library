@@ -144,7 +144,7 @@ with st.sidebar:
     area = st.radio(
         "Area",
         ["Admissions", "Registration", "Financial Aid",
-         "Enrollment Management", "Cross-Domain", "Benchmarking"],
+         "Enrollment Management", "Cross-Domain", "Benchmarking", "Finance"],
         label_visibility="collapsed"
     )
 
@@ -909,3 +909,70 @@ elif area == "Benchmarking":
         st.plotly_chart(fig, use_container_width=True)
 
     st.caption("mart_scorecard_program_outcomes · distribute/marts/summaries/enrollment/mart_scorecard_program_outcomes")
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# FINANCE
+# ══════════════════════════════════════════════════════════════════════════════
+elif area == "Finance":
+    logo_header("Finance")
+
+    st.markdown("""
+    <div class="kpi-callout" style="background: linear-gradient(135deg, #fff5e6 0%, #ffffff 100%); border-left-color: #9a5a2a;">
+        <strong>⚠️ Finance Domain — Not Yet Ingested</strong><br/>
+        The Finance domain (G/L, Student Accounts, A/P) has been catalogued but no source systems
+        have been formally integrated. The 14 KPIs below require ERP Finance module data that is
+        not yet provisioned on the Ditteau platform.
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("### Catalogued Finance KPIs")
+    st.markdown("""
+    The following KPIs are defined in the governed catalog pending Finance source integration:
+
+    **Financial Ratios & Benchmarking**
+    - NACUBO Composite Financial Index (CFI), 5-Year Trend
+    - Peer Benchmarking of Financial Ratios
+    - Days Cash on Hand, Enrollment-Adjusted
+
+    **Budget & Variance**
+    - Multi-Year Budget Variance, Seasonality-Adjusted
+    - Budget vs. Actual by Fund/Department
+
+    **Accounts Receivable (Student Accounts)**
+    - AR Aging (30/60/90/120+)
+    - Days Sales Outstanding (DSO)
+
+    **Accounts Payable**
+    - A/P Aging
+    - Days Payable Outstanding (DPO)
+    - % Invoices Paid On Time
+    - 3-Way Match / Invoice Exception Rate
+    - Early Payment Discount Capture Rate
+
+    **Strategic Dashboards**
+    - Cash Flow Forecasting / Scenario Modeling
+    - Discount Rate Strategy Sensitivity Analysis
+    """)
+
+    st.markdown("---")
+    st.markdown("### Dependencies")
+    st.markdown("""
+    **Source Systems Required:**
+    - General Ledger (Jenzabar CX Finance, Workday Financials, or Banner Finance)
+    - Student Accounts / AR module
+    - Accounts Payable module
+
+    **Proposed Marts (not yet designed):**
+    - `(proposed) mart_finance_ratios`
+    - `(proposed) mart_finance_budget_variance`
+    - `(proposed) mart_ar_aging`
+    - `(proposed) mart_ap_performance`
+    - `(proposed) mart_program_economics`
+    - `(proposed) mart_student_value`
+    - `(proposed) mart_auxiliary_revenue`
+
+    Contact **LVP** for integration roadmap and **WDT** for provisioning timelines.
+    """)
+
+    st.caption("Finance domain catalogued · pending source integration")

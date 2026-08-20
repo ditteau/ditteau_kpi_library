@@ -35,10 +35,10 @@ the gap.
 
 ## Catalog conventions
 
-- 138 rows, 6 Areas: Enrollment Management (32), Admissions (30),
-  Financial Aid (29), Registration (27), Cross-Domain (13), Benchmarking (7).
-  Each Area is a **contiguous block** in the CSV — keep it that way when
-  inserting rows; don't scatter an Area's rows across the file.
+- 162 rows, 7 Areas: Enrollment Management (32), Admissions (30),
+  Financial Aid (29), Registration (27), Cross-Domain (23), Benchmarking (7),
+  Finance (14). Each Area is a **contiguous block** in the CSV — keep it that
+  way when inserting rows; don't scatter an Area's rows across the file.
 - `Type` (Strategic / Operational / Compliance / Financial) is a
   governance-and-planning axis. The HTML's `cat` / Category
   (Strategic / Operational / Analytical / Tactical) is a dashboard-routing
@@ -92,6 +92,98 @@ the gap.
 - `mart_scorecard_program_outcomes` — built and functional; powers
   Benchmarking dashboard tab with College Scorecard data (earnings, debt,
   default rates by program).
+
+## Finance Domain Integration — Standing Decisions (LVP, 2026-08)
+
+The following decisions are settled and should not be relitigated:
+
+1. **Category 1 candidates are `Cross-Domain`, not `Finance`.** The ten KPIs
+   that join Finance data to Enrollment, Admissions, Registration, or
+   Financial Aid data take `Area = Cross-Domain`.
+
+2. **Finance is one Area.** `student_accounts` does not become a separate
+   sub-area. G/L, Student Accounts (AR), and A/P all live under
+   `Area = Finance`, with separation carried by the `Primary Source System`
+   column instead. This matches the single `FINANCE` value already reserved
+   by the `DATA_DOMAIN` governance tag.
+
+3. **The catalog is aspirational as well as descriptive.** Category 3
+   (ERP-native) rows enter the governed catalog now, before per-client ERP
+   feasibility is confirmed. The `PROPOSED —` prefix carries that status.
+   A row with no ingested source is legitimate catalog content.
+
+4. **The HTML library is authoritative at 162 rows.** CSV and HTML are now
+   synchronized. (Prior reconciliation closed the 127→138 gap; Finance
+   integration added 24 rows for 162 total.)
+
+## Finance Vocabulary Additions (2026-08)
+
+**Area:** `Finance` added to `AREA_ORDER` in `kpi_library.html` and to
+`st.radio` Area list in `kpi_library_dashboard.py`.
+
+**Update Frequency:** `Monthly` — twelve of the 24 Finance rows use this;
+finance operates on fiscal periods rather than academic terms. Do not
+coerce to `Term`.
+
+**Primary Source System:** Three new values:
+- `Jenzabar:Workday:Banner (Finance)` — mirrors existing interchangeable-SIS
+  convention
+- `Student Accounts (AR)`
+- `A/P`
+
+**Audience:** Three new values:
+- `Controller`
+- `A/P Manager`
+- `VP Student Affairs`
+
+(`Bursar` and `CFO` already exist in the vocabulary.)
+
+## Proposed Finance Marts (not yet designed)
+
+The following `(proposed) mart_*` names appear in the Finance rows. These
+are **not built models** — do not create dbt models for them without an
+LVP decision. The `(proposed)` prefix distinguishes them from built marts
+at a glance.
+
+- `(proposed) mart_program_economics`
+- `(proposed) mart_student_value`
+- `(proposed) mart_finance_ratios`
+- `(proposed) mart_finance_budget_variance`
+- `(proposed) mart_ar_aging`
+- `(proposed) mart_ap_performance`
+- `(proposed) mart_auxiliary_revenue`
+
+## Finance Integration Findings — Pending Human Decision
+
+These require human decisions. Do not act on them; record and surface.
+
+**1. Six Finance candidates overlap existing catalog rows.**
+   The dedupe decision is LVP's. Overlaps identified:
+   - *Net Tuition Revenue per FTE by Program/Major* overlaps *Net Tuition
+     Revenue per Student* (Financial Aid) and *Revenue per Enrolled Student*
+     (Enrollment Management). All three depend on `mart_enrollment_census_ntr`.
+   - *Customer Acquisition Cost vs. LTV* — its CAC numerator is the existing
+     Admissions row *Cost Per Enrolled Student*.
+   - *Discount Rate by Student Segment* overlaps *Tuition Discount Rate* and
+     *Tuition Discount Rate Trend (5-Year)*.
+   - *Aid Leveraging ROI (Extended)* is a scope expansion of the existing
+     `mart_aid_leveraging` stub, not a new mart.
+   - *Retention-Adjusted Revenue Forecast* is blocked by the same missing NTR
+     dependency that already produced the `NO CONFIDENT MATCH` flag on
+     *Revenue per Completed Student*.
+
+**2. `Cost Per Enrolled Student` declares `Slate / GL` as its source system.**
+   The catalog asserts a `GL` source for a system the platform does not
+   ingest. Either the bare `GL` token retires in favor of the new
+   finance-ERP vocabulary, or that row is reflagged `PROPOSED` alongside
+   the Finance set. Do not change it without LVP decision.
+
+**3. Possible undocumented AR data in the platform.**
+   RDT reports that Jenzabar CX's `sbcust_rec` billing table already feeds
+   `mart_enrollment_census_ntr`. If correct, student-account data is flowing
+   without a `DATA_DOMAIN = FINANCE` tag and without having passed KKM
+   review. **This is a governance exposure.** Do not trace, modify, or
+   retag the lineage yourself. Surface to KKM and LVP.
 
 ## Governance gates — do not route around these
 

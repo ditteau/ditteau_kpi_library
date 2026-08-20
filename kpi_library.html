@@ -300,6 +300,32 @@ const DATA = [
 {n:136, area:"Benchmarking", title:"Loan Default Rate (College Scorecard)",    type:"KPI",       mart:"mart_scorecard_program_outcomes", cat:"Strategic", owner:"", declared_consumers:"", freshness_sla:"", lifecycle_status:"draft"},
 {n:137, area:"Benchmarking", title:"Borrower-Based Repayment Rate (BBRR)",    type:"KPI",       mart:"mart_scorecard_program_outcomes", cat:"Strategic", owner:"", declared_consumers:"", freshness_sla:"", lifecycle_status:"draft"},
 {n:138, area:"Benchmarking", title:"Earnings-to-Debt Ratio by Program",       type:"KPI",       mart:"mart_scorecard_program_outcomes", cat:"Analytical", owner:"", declared_consumers:"", freshness_sla:"", lifecycle_status:"draft"},
+// ── CROSS-DOMAIN (Finance Integration) ──────────────────────────────────────
+{n:139, area:"Cross-Domain", title:"Net Tuition Revenue per FTE by Program/Major",     type:"KPI",       mart:"(proposed) mart_program_economics", cat:"Analytical", owner:"", declared_consumers:"", freshness_sla:"", lifecycle_status:"draft"},
+{n:140, area:"Cross-Domain", title:"Student Lifetime Value (LTV)",                     type:"KPI",       mart:"(proposed) mart_student_value", cat:"Strategic", owner:"", declared_consumers:"", freshness_sla:"", lifecycle_status:"draft"},
+{n:141, area:"Cross-Domain", title:"Customer Acquisition Cost vs. LTV (CAC:LTV)",      type:"KPI",       mart:"(proposed) mart_student_value", cat:"Analytical", owner:"", declared_consumers:"", freshness_sla:"", lifecycle_status:"draft"},
+{n:142, area:"Cross-Domain", title:"Cost to Educate per Student by Program",           type:"KPI",       mart:"(proposed) mart_program_economics", cat:"Analytical", owner:"", declared_consumers:"", freshness_sla:"", lifecycle_status:"draft"},
+{n:143, area:"Cross-Domain", title:"Contribution Margin by Academic Program",          type:"KPI",       mart:"(proposed) mart_program_economics", cat:"Analytical", owner:"", declared_consumers:"", freshness_sla:"", lifecycle_status:"draft"},
+{n:144, area:"Cross-Domain", title:"Aid Leveraging ROI (Extended)",                    type:"KPI",       mart:"mart_aid_leveraging", cat:"Analytical", owner:"", declared_consumers:"", freshness_sla:"", lifecycle_status:"draft"},
+{n:145, area:"Cross-Domain", title:"Bad-Debt Risk Score with Academic Signals",        type:"KPI",       mart:"(proposed) mart_ar_aging", cat:"Operational", owner:"", declared_consumers:"", freshness_sla:"", lifecycle_status:"draft"},
+{n:146, area:"Cross-Domain", title:"Retention-Adjusted Revenue Forecast",              type:"KPI",       mart:"(proposed) mart_student_value", cat:"Analytical", owner:"", declared_consumers:"", freshness_sla:"", lifecycle_status:"draft"},
+{n:147, area:"Cross-Domain", title:"Auxiliary Revenue per Bed / Occupancy",            type:"KPI",       mart:"(proposed) mart_auxiliary_revenue", cat:"Analytical", owner:"", declared_consumers:"", freshness_sla:"", lifecycle_status:"draft"},
+{n:148, area:"Cross-Domain", title:"Discount Rate by Student Segment",                 type:"KPI",       mart:"mart_aid_summary", cat:"Analytical", owner:"", declared_consumers:"", freshness_sla:"", lifecycle_status:"draft"},
+// ── FINANCE ─────────────────────────────────────────────────────────────────
+{n:149, area:"Finance", title:"NACUBO Composite Financial Index (CFI), 5-Year Trend",  type:"KPI",       mart:"(proposed) mart_finance_ratios", cat:"Analytical", owner:"", declared_consumers:"", freshness_sla:"", lifecycle_status:"draft"},
+{n:150, area:"Finance", title:"Peer Benchmarking of Financial Ratios",                 type:"Dashboard", mart:"(proposed) mart_finance_ratios", cat:"Strategic", owner:"", declared_consumers:"", freshness_sla:"", lifecycle_status:"draft"},
+{n:151, area:"Finance", title:"Cash Flow Forecasting / Scenario Modeling",             type:"Dashboard", mart:"(proposed) mart_finance_ratios", cat:"Strategic", owner:"", declared_consumers:"", freshness_sla:"", lifecycle_status:"draft"},
+{n:152, area:"Finance", title:"Discount Rate Strategy Sensitivity Analysis",           type:"Dashboard", mart:"(proposed) mart_program_economics", cat:"Strategic", owner:"", declared_consumers:"", freshness_sla:"", lifecycle_status:"draft"},
+{n:153, area:"Finance", title:"Multi-Year Budget Variance, Seasonality-Adjusted",      type:"KPI",       mart:"(proposed) mart_finance_budget_variance", cat:"Analytical", owner:"", declared_consumers:"", freshness_sla:"", lifecycle_status:"draft"},
+{n:154, area:"Finance", title:"Days Cash on Hand, Enrollment-Adjusted",                type:"KPI",       mart:"(proposed) mart_finance_ratios", cat:"Analytical", owner:"", declared_consumers:"", freshness_sla:"", lifecycle_status:"draft"},
+{n:155, area:"Finance", title:"Budget vs. Actual by Fund/Department",                  type:"KPI",       mart:"(proposed) mart_finance_budget_variance", cat:"Operational", owner:"", declared_consumers:"", freshness_sla:"", lifecycle_status:"draft"},
+{n:156, area:"Finance", title:"AR Aging (30/60/90/120+)",                              type:"KPI",       mart:"(proposed) mart_ar_aging", cat:"Operational", owner:"", declared_consumers:"", freshness_sla:"", lifecycle_status:"draft"},
+{n:157, area:"Finance", title:"A/P Aging",                                             type:"KPI",       mart:"(proposed) mart_ap_performance", cat:"Operational", owner:"", declared_consumers:"", freshness_sla:"", lifecycle_status:"draft"},
+{n:158, area:"Finance", title:"Days Payable Outstanding (DPO)",                        type:"KPI",       mart:"(proposed) mart_ap_performance", cat:"Analytical", owner:"", declared_consumers:"", freshness_sla:"", lifecycle_status:"draft"},
+{n:159, area:"Finance", title:"Days Sales Outstanding (DSO)",                          type:"KPI",       mart:"(proposed) mart_ar_aging", cat:"Analytical", owner:"", declared_consumers:"", freshness_sla:"", lifecycle_status:"draft"},
+{n:160, area:"Finance", title:"% Invoices Paid On Time",                               type:"KPI",       mart:"(proposed) mart_ap_performance", cat:"Analytical", owner:"", declared_consumers:"", freshness_sla:"", lifecycle_status:"draft"},
+{n:161, area:"Finance", title:"3-Way Match / Invoice Exception Rate",                  type:"KPI",       mart:"(proposed) mart_ap_performance", cat:"Analytical", owner:"", declared_consumers:"", freshness_sla:"", lifecycle_status:"draft"},
+{n:162, area:"Finance", title:"Early Payment Discount Capture Rate",                   type:"KPI",       mart:"(proposed) mart_ap_performance", cat:"Analytical", owner:"", declared_consumers:"", freshness_sla:"", lifecycle_status:"draft"},
 ];
 
 const CHART_WORDS = ["Trend","Curve"," vs. Prior","Pace vs","Comparison","Correlation","→"," Lag ","Over Time","Curves","Tracker","Flow"];
@@ -443,7 +469,7 @@ const METRIC_INFO = {
   "137": {ref:"mart_scorecard_program_outcomes.borrower_based_repayment_rate", calc:"PROPOSED — share of a program's borrower cohort with a declining or current loan balance within the federal measurement window, per the Financial Value Transparency / Gainful Employment rules, published via College Scorecard and ingested as-is.", flag:null},
   "138": {ref:"mart_scorecard_program_outcomes.earnings_to_debt_ratio_by_program", calc:"PROPOSED — median post_completion_earnings divided by median debt_at_completion by program (inverse framing of the federal debt-to-earnings ratio used in gainful employment determinations), from mart_scorecard_program_outcomes.", flag:null},
 };
-const AREA_ORDER = ["All","Admissions","Registration","Financial Aid","Enrollment Management","Cross-Domain","Benchmarking"];
+const AREA_ORDER = ["All","Admissions","Registration","Financial Aid","Enrollment Management","Cross-Domain","Benchmarking","Finance"];
 const TYPE_ORDER = ["All","KPI","Chart","Dashboard"];
 const CATEGORY_ORDER = ["All","Strategic","Operational","Analytical","Tactical"];
 
