@@ -916,63 +916,293 @@ elif area == "Benchmarking":
 # ══════════════════════════════════════════════════════════════════════════════
 elif area == "Finance":
     logo_header("Finance")
+    kpi_callout("Budget vs. Actual by Fund, AR Aging (30/60/90/120+)")
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # BUDGET PERFORMANCE
+    # ──────────────────────────────────────────────────────────────────────────
+
+    st.markdown("### Budget Performance")
 
     st.markdown("""
     <div class="kpi-callout" style="background: linear-gradient(135deg, #fff5e6 0%, #ffffff 100%); border-left-color: #9a5a2a;">
-        <strong>⚠️ Finance Domain — Not Yet Ingested</strong><br/>
-        The Finance domain (G/L, Student Accounts, A/P) has been catalogued but no source systems
-        have been formally integrated. The 14 KPIs below require ERP Finance module data that is
-        not yet provisioned on the Ditteau platform.
+        <strong>⚠️ Budget data available through FY2223 only.</strong>
+        Later fiscal years show actuals without variance (budget not loaded).
+        Variance shown at object-code grain — fund/department rollup requires account classification.
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("### Catalogued Finance KPIs")
-    st.markdown("""
-    The following KPIs are defined in the governed catalog pending Finance source integration:
+    # Budget summary for latest FY with coverage
+    df_budget_summary = run_query(f"""
+        SELECT
+            fiscal_year_code,
+            SUM(actual_amount) AS total_actual,
+            SUM(budget_amount) AS total_budget,
+            SUM(variance_amount) AS total_variance
+        FROM {DB}.{SCHEMA}.MART_FINANCE_BUDGET_VARIANCE
+        WHERE has_budget_coverage = TRUE
+        GROUP BY fiscal_year_code
+        ORDER BY fiscal_year_code DESC
+        LIMIT 1
+    """)
 
-    **Financial Ratios & Benchmarking**
-    - NACUBO Composite Financial Index (CFI), 5-Year Trend
-    - Peer Benchmarking of Financial Ratios
+    # Budget trend across all years with coverage
+    df_budget_trend = run_query(f"""
+        SELECT
+            fiscal_year_code,
+            SUM(actual_amount) AS total_actual,
+            SUM(budget_amount) AS total_budget
+        FROM {DB}.{SCHEMA}.MART_FINANCE_BUDGET_VARIANCE
+        WHERE has_budget_coverage = TRUE
+        GROUP BY fiscal_year_code
+        ORDER BY fiscal_year_code
+    """)
+
+    # Top variance by object code (latest year)
+    df_top_variance = run_query(f"""
+        SELECT
+            object_code,
+            SUM(actual_amount) AS actual,
+            SUM(budget_amount) AS budget,
+            SUM(variance_amount) AS variance
+        FROM {DB}.{SCHEMA}.MART_FINANCE_BUDGET_VARIANCE
+        WHERE has_budget_coverage = TRUE
+          AND fiscal_year_code = (
+              SELECT MAX(fiscal_year_code)
+              FROM {DB}.{SCHEMA}.MART_FINANCE_BUDGET_VARIANCE
+              WHERE has_budget_coverage = TRUE
+          )
+        GROUP BY object_code
+        ORDER BY ABS(SUM(variance_amount)) DESC
+        LIMIT 10
+    """)
+
+    if not df_budget_summary.empty:
+        row = df_budget_summary.iloc[0]
+        fy = row["fiscal_year_code"]
+        total_actual = float(row["total_actual"]) if pd.notna(row["total_actual"]) else 0
+        total_budget = float(row["total_budget"]) if pd.notna(row["total_budget"]) else 0
+        total_variance = float(row["total_variance"]) if pd.notna(row["total_variance"]) else 0
+        variance_pct = (total_variance / total_budget) if total_budget != 0 else 0
+
+        st.markdown(f"**Fiscal Year {fy}** (Latest with Budget Coverage)")
+        c1, c2, c3, c4 = st.columns(4)
+        with c1:
+            st.metric("Total Actual", f"${total_actual/1e6:,.1f}M", help="Sum of actual amounts (periods 1-12)")
+        with c2:
+            st.metric("Total Budget", f"${total_budget/1e6:,.1f}M", help="Sum of budget amounts")
+        with c3:
+            st.metric("Net Variance", f"${total_variance/1e6:,.1f}M", help="Budget minus Actual")
+        with c4:
+            st.metric("Variance %", fmt_pct(variance_pct), help="Variance as % of budget")
+    else:
+        st.warning("No budget data available.")
+
+    # Budget trend chart
+    if not df_budget_trend.empty:
+        st.markdown("#### Actual vs. Budget Trend")
+        fig_trend = go.Figure()
+        fig_trend.add_trace(go.Scatter(
+            x=df_budget_trend["fiscal_year_code"],
+            y=df_budget_trend["total_actual"] / 1e6,
+            mode="lines+markers", name="Actual",
+            line=dict(color=MAROON, width=2.5), marker=dict(size=6)
+        ))
+        fig_trend.add_trace(go.Scatter(
+            x=df_budget_trend["fiscal_year_code"],
+            y=df_budget_trend["total_budget"] / 1e6,
+            mode="lines+markers", name="Budget",
+            line=dict(color=NAVY, width=2, dash="dot"), marker=dict(size=5)
+        ))
+        fig_trend.update_layout(
+            height=300, margin=dict(t=20, b=20, l=20, r=20),
+            legend=dict(orientation="h", y=-0.2),
+            yaxis_title="Amount ($M)",
+            xaxis_title="Fiscal Year"
+        )
+        st.plotly_chart(fig_trend, use_container_width=True)
+
+    # Top variance bar chart
+    if not df_top_variance.empty:
+        st.markdown("#### Top 10 Variance by Object Code")
+        df_top_variance["variance_m"] = df_top_variance["variance"] / 1e6
+        df_top_variance["color"] = df_top_variance["variance"].apply(lambda v: GREEN if v > 0 else RED)
+
+        fig_var = go.Figure(go.Bar(
+            x=df_top_variance["variance_m"],
+            y=df_top_variance["object_code"],
+            orientation="h",
+            marker_color=df_top_variance["color"],
+            text=df_top_variance["variance_m"].apply(lambda v: f"${v:+,.2f}M"),
+            textposition="outside",
+            hovertemplate="<b>%{y}</b><br>Variance: $%{x:,.2f}M<extra></extra>"
+        ))
+        fig_var.update_layout(
+            height=350, margin=dict(t=20, b=20, l=80, r=40),
+            xaxis_title="Variance ($M)",
+            yaxis=dict(autorange="reversed")
+        )
+        st.plotly_chart(fig_var, use_container_width=True)
+
+    st.caption("mart_finance_budget_variance · distribute/marts/summaries/finance/mart_finance_budget_variance")
+
+    st.divider()
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # RECEIVABLES HEALTH
+    # ──────────────────────────────────────────────────────────────────────────
+
+    st.markdown("### Receivables Health")
+
+    # AR aging query
+    df_ar = run_query(f"""
+        SELECT
+            as_of_date,
+            as_of_basis,
+            subsidiary_code,
+            aging_bucket,
+            holder_count,
+            outstanding_amount,
+            max_days_past_due,
+            is_small_cell
+        FROM {DB}.{SCHEMA}.MART_AR_AGING
+        ORDER BY
+            subsidiary_code,
+            CASE aging_bucket
+                WHEN 'not_yet_due' THEN 1
+                WHEN '1_30' THEN 2
+                WHEN '31_60' THEN 3
+                WHEN '61_90' THEN 4
+                WHEN '91_120' THEN 5
+                WHEN 'over_120' THEN 6
+                WHEN 'unknown_due_date' THEN 7
+                WHEN 'settled_or_credit' THEN 8
+            END
+    """)
+
+    if not df_ar.empty:
+        as_of_date = df_ar.iloc[0]["as_of_date"]
+        as_of_basis = df_ar.iloc[0]["as_of_basis"]
+
+        st.markdown(f"""
+        <div class="kpi-callout" style="background: linear-gradient(135deg, #fff5e6 0%, #ffffff 100%); border-left-color: #9a5a2a;">
+            <strong>⚠️ Balances as of {as_of_date}</strong> — {as_of_basis}.<br/>
+            In the DEMEAU archive, all outstanding balances fall in the 120+ day bucket
+            because the ledger was retired in 2024. This is expected behavior, not a defect.
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Filter to receivables only (exclude settled/credit and unknown)
+        df_ar_active = df_ar[~df_ar["aging_bucket"].isin(["settled_or_credit", "unknown_due_date"])].copy()
+
+        # Summary metrics
+        total_outstanding = df_ar_active["outstanding_amount"].sum()
+        total_holders = df_ar_active["holder_count"].sum()
+        max_days = df_ar_active["max_days_past_due"].max() if not df_ar_active.empty else 0
+
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            st.metric("Total Outstanding", f"${total_outstanding:,.0f}", help="Net amount owed across all aging buckets")
+        with c2:
+            st.metric("Accounts Owing", fmt_num(total_holders), help="Distinct account holders with balances")
+        with c3:
+            st.metric("Max Days Past Due", fmt_num(max_days), help="Oldest unpaid item in portfolio")
+
+        # Aging bucket chart
+        if not df_ar_active.empty:
+            st.markdown("#### AR Aging by Bucket")
+
+            # Aggregate across subsidiaries for the chart
+            df_aging_chart = df_ar_active.groupby("aging_bucket").agg({
+                "holder_count": "sum",
+                "outstanding_amount": "sum"
+            }).reset_index()
+
+            # Sort buckets properly
+            bucket_order = ["not_yet_due", "1_30", "31_60", "61_90", "91_120", "over_120"]
+            bucket_labels = {
+                "not_yet_due": "Not Yet Due",
+                "1_30": "1-30 Days",
+                "31_60": "31-60 Days",
+                "61_90": "61-90 Days",
+                "91_120": "91-120 Days",
+                "over_120": "120+ Days"
+            }
+            bucket_colors = {
+                "not_yet_due": GREEN,
+                "1_30": "#7cb342",
+                "31_60": AMBER,
+                "61_90": "#ff9800",
+                "91_120": "#f57c00",
+                "over_120": RED
+            }
+
+            df_aging_chart["bucket_label"] = df_aging_chart["aging_bucket"].map(bucket_labels)
+            df_aging_chart["bucket_color"] = df_aging_chart["aging_bucket"].map(bucket_colors)
+            df_aging_chart["sort_order"] = df_aging_chart["aging_bucket"].apply(
+                lambda x: bucket_order.index(x) if x in bucket_order else 99
+            )
+            df_aging_chart = df_aging_chart.sort_values("sort_order")
+
+            fig_aging = go.Figure(go.Bar(
+                x=df_aging_chart["bucket_label"],
+                y=df_aging_chart["outstanding_amount"],
+                marker_color=df_aging_chart["bucket_color"],
+                text=df_aging_chart["outstanding_amount"].apply(lambda v: f"${v:,.0f}"),
+                textposition="outside",
+                hovertemplate="<b>%{x}</b><br>$%{y:,.0f}<br>%{customdata} accounts<extra></extra>",
+                customdata=df_aging_chart["holder_count"]
+            ))
+            fig_aging.update_layout(
+                height=300, margin=dict(t=20, b=20, l=20, r=20),
+                xaxis_title="Aging Bucket",
+                yaxis_title="Outstanding Amount ($)"
+            )
+            st.plotly_chart(fig_aging, use_container_width=True)
+
+        # Subsidiary breakdown table
+        st.markdown("#### Breakdown by Subsidiary")
+        df_sub = df_ar_active.groupby("subsidiary_code").agg({
+            "holder_count": "sum",
+            "outstanding_amount": "sum"
+        }).reset_index()
+        df_sub.columns = ["Subsidiary", "Accounts", "Outstanding"]
+        df_sub["Outstanding"] = df_sub["Outstanding"].apply(lambda v: f"${v:,.0f}")
+        st.dataframe(df_sub, use_container_width=True, hide_index=True)
+
+        # Small cell warning if applicable
+        if df_ar_active["is_small_cell"].any():
+            st.info("ℹ️ Some buckets have fewer than 5 account holders (small cell). Use caution when reporting.")
+
+    else:
+        st.warning("No AR aging data available.")
+
+    st.caption("mart_ar_aging · distribute/marts/summaries/finance/mart_ar_aging")
+
+    st.divider()
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # COMING SOON
+    # ──────────────────────────────────────────────────────────────────────────
+
+    st.markdown("### Coming Soon")
+    st.markdown("""
+    The following Finance KPIs are catalogued but require additional data sources or marts:
+
+    **Blocked on Cash Position Mart:**
     - Days Cash on Hand, Enrollment-Adjusted
 
-    **Budget & Variance**
+    **Blocked on A/P Data (historical only in DEMEAU):**
+    - A/P Aging, Days Payable Outstanding (DPO)
+    - % Invoices Paid On Time, Early Payment Discount Capture Rate
+
+    **Blocked on External Data:**
+    - NACUBO Composite Financial Index (CFI) — requires audited financials
+    - Peer Benchmarking of Financial Ratios — requires IPEDS Finance Survey
+
+    **Requires Additional Modeling:**
     - Multi-Year Budget Variance, Seasonality-Adjusted
-    - Budget vs. Actual by Fund/Department
-
-    **Accounts Receivable (Student Accounts)**
-    - AR Aging (30/60/90/120+)
-    - Days Sales Outstanding (DSO)
-
-    **Accounts Payable**
-    - A/P Aging
-    - Days Payable Outstanding (DPO)
-    - % Invoices Paid On Time
-    - 3-Way Match / Invoice Exception Rate
-    - Early Payment Discount Capture Rate
-
-    **Strategic Dashboards**
-    - Cash Flow Forecasting / Scenario Modeling
-    - Discount Rate Strategy Sensitivity Analysis
+    - Days Sales Outstanding (DSO) — needs revenue classification
     """)
 
-    st.markdown("---")
-    st.markdown("### Dependencies")
-    st.markdown("""
-    **Source Systems Required:**
-    - General Ledger (Jenzabar CX Finance, Workday Financials, or Banner Finance)
-    - Student Accounts / AR module
-    - Accounts Payable module
-
-    **Proposed Marts (not yet designed):**
-    - `(proposed) mart_finance_ratios`
-    - `(proposed) mart_finance_budget_variance`
-    - `(proposed) mart_ar_aging`
-    - `(proposed) mart_ap_performance`
-    - `(proposed) mart_program_economics`
-    - `(proposed) mart_student_value`
-    - `(proposed) mart_auxiliary_revenue`
-
-    Contact **LVP** for integration roadmap and **WDT** for provisioning timelines.
-    """)
-
-    st.caption("Finance domain catalogued · pending source integration")
+    st.caption("Finance domain · 2 of 14 KPIs visualized")
