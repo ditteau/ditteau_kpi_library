@@ -4,30 +4,34 @@ Higher-education KPI catalog, governance guidelines, and an example
 Streamlit-in-Snowflake dashboard, built on the Ditteau Data Unified
 Platform's Distribute layer.
 
-## What's here
+## Repository Structure
+
+```
+├── higher_ed_kpi_catalog_enriched.csv   # Source of truth (162 rows, 7 Areas)
+├── kpi_library.html                      # Browsable HTML mirror
+├── kpi_library_dashboard.py              # Streamlit-in-Snowflake dashboard
+├── CLAUDE.md                             # Operating instructions for contributors
+├── README.md
+├── environment.yml                       # SiS dependencies
+├── pyproject.toml
+├── snowflake.yml                         # Snowflake Native App config
+└── archive/                              # Historical reconciliation docs
+```
+
+## What's Here
 
 ### Core Artifacts
 
 | File | What it is |
 |---|---|
-| `higher_ed_kpi_catalog_enriched.csv` | The canonical KPI/dashboard catalog — 138 rows across 6 Areas (Enrollment Management, Admissions, Financial Aid, Registration, Cross-Domain, Benchmarking). Single source of truth for KPI definitions, calculation logic, and governance flags (FERPA, build status). |
+| `higher_ed_kpi_catalog_enriched.csv` | The canonical KPI/dashboard catalog — 162 rows across 7 Areas (Enrollment Management, Admissions, Financial Aid, Registration, Cross-Domain, Benchmarking, Finance). Single source of truth for KPI definitions, calculation logic, and governance flags (FERPA, build status). |
 | `kpi_library.html` | A browsable, filterable version of the catalog (by Area / Type / Category), with calculation-logic tooltips. Mirrors the CSV — see "Keeping things in sync" below. |
 | `kpi_library_dashboard.py` | Streamlit-in-Snowflake reference dashboard, one tab per Area, showing live examples of catalog KPIs against the `DEMEAU_DD_DEV` demo data. |
-| `Ditteau_kpi_guidelines.md` | The governance document: KPI/dashboard type definitions, OKR-to-KPI alignment, target/threshold conventions, the FERPA gate, role-based KPI bundles, and the pre-publish checklist. Read this before adding or changing a KPI. |
 | `CLAUDE.md` | Operating instructions for Claude Code and human contributors — read this before editing any file. Defines source of truth, catalog conventions, governance gates, and platform conventions. |
 
-### Reconciliation Documentation (2026-07-22)
+### Archive
 
-These files document the systematic verification and alignment of the catalog, HTML, dashboard, and actual dbt models:
-
-| File | What it is |
-|---|---|
-| `RECONCILIATION_SUMMARY.md` | Executive summary of the 4-phase reconciliation process. Start here for an overview. |
-| `PHASE_1_MART_INVENTORY.md` | Ground truth inventory: 23 marts/snaps verified against actual dbt models in `ditteau_data_transform`. |
-| `PHASE_2_CATALOG_CORRECTIONS.md` | Detailed analysis of 29 catalog rows requiring correction (21% of 138 rows). |
-| `PHASE_3_HTML_ALIGNMENT.md` | HTML-catalog synchronization verification (99.3% aligned). |
-| `PHASE_4_DASHBOARD_ALIGNMENT.md` | Dashboard query analysis — validated all 20 queries against actual marts. |
-| `PHASE_5_CORRECTION_PLAN.md` | Line-by-line correction instructions for CSV, HTML, dashboard, and CLAUDE.md. |
+The `archive/` folder contains historical documentation from the July 2026 reconciliation project (PHASE_1–5 docs, RECONCILIATION_SUMMARY) and superseded files. See `archive/README.md` for details.
 
 ## Current build status
 
@@ -41,6 +45,7 @@ All dashboard tabs are functional with real data:
 - **Financial Aid** (29 KPIs) — fully functional; PowerFAIDS integration pending affects unmet need calculations only
 - **Enrollment Management** (32 KPIs) — fully functional
 - **Benchmarking** (7 KPIs) — fully functional; College Scorecard integration complete
+- **Finance** (14 KPIs) — Budget Performance and AR Aging live; remaining KPIs use proposed marts pending ERP integration
 
 ### 🟡 Known Limitations
 
@@ -65,9 +70,9 @@ To preview locally with `streamlit run kpi_library_dashboard.py`, you'll need ne
 
 ## Governance
 
-Changes to this catalog aren't just a data edit — they're a governance action. See `Ditteau_kpi_guidelines.md`, Section G, for the full model. Short version:
+Changes to this catalog aren't just a data edit — they're a governance action. See `CLAUDE.md` for the full governance model. Short version:
 
-- **KKM** signs off before any FERPA-flagged KPI reaches client-facing output (34 of 138 rows are FERPA-sensitive).
+- **KKM** signs off before any FERPA-flagged KPI reaches client-facing output.
 - **WDT** reviews production merges and owns Snowflake provisioning.
 - **RDT** reviews peer/competitive content (relevant to the Benchmarking area).
 - **LVP** owns architecture and strategic planning.
@@ -91,7 +96,7 @@ If a task would touch a FERPA-flagged KPI, a production merge, or peer-benchmark
 ## Catalog conventions
 
 Per `CLAUDE.md`:
-- **138 rows, 6 Areas:** Enrollment Management (32), Admissions (30), Financial Aid (29), Registration (27), Cross-Domain (13), Benchmarking (7)
+- **162 rows, 7 Areas:** Enrollment Management (32), Admissions (30), Financial Aid (29), Registration (27), Cross-Domain (23), Benchmarking (7), Finance (14)
 - Each Area is a **contiguous block** in the CSV — keep it that way when inserting rows
 - **`Type`** (Strategic / Operational / Compliance / Financial) ≠ **`Category`** in HTML (Strategic / Operational / Analytical / Tactical) — these are different taxonomies
 - **`Time Series?` = Yes** pairs only with **`Indicator` = Leading or Lagging**; No always pairs with N/A
@@ -104,20 +109,27 @@ Per `CLAUDE.md`:
 
 ## Recent changes
 
-### 2026-07-22
-- Converted `Ditteau_KPI_Dashboard_Guidelines.docx` → `Ditteau_kpi_guidelines.md` (properly formatted markdown)
+### 2026-09
+- Archived historical reconciliation docs to `archive/` folder
+- Added `.gitignore` for cache, backup, and draft files
+
+### 2026-08
+- Added Finance domain to catalog (24 rows, 138→162 total)
+- Added live Finance dashboard tab with Budget Performance and AR Aging
+- Fixed Calculation Logic row-shift misalignment (rows 132-138)
+
+### 2026-07
 - Completed 4-phase reconciliation of catalog, HTML, dashboard, and dbt models
 - Fixed Benchmarking tab SQL error (`debt_at_completion` → `debt_median_all`)
 - Discovered and documented 2 previously undocumented marts (`mart_enrollment_demographics`, `mart_scorecard_program_outcomes`)
-- Identified 29 rows (21%) requiring catalog status corrections — see `PHASE_5_CORRECTION_PLAN.md` for implementation
+- Reconciliation docs now in `archive/`
 
 ## Contributing
 
 Before making changes:
 1. Read `CLAUDE.md` for source of truth, conventions, and governance gates
-2. Read `Ditteau_kpi_guidelines.md` Section J (Pre-Publish Checklist) before shipping any KPI
-3. If touching FERPA-flagged content, obtain KKM sign-off first
-4. Coordinate with WDT for any production deployment
+2. If touching FERPA-flagged content, obtain KKM sign-off first
+3. Coordinate with WDT for any production deployment
 
 ## Questions?
 
