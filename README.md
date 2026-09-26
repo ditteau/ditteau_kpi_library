@@ -49,7 +49,7 @@ All dashboard tabs are functional with real data:
 
 ### 🟡 Known Limitations
 
-- **Cross-Domain tab:** Blocked by unbuilt `snap_cohort_milestone` (affects 13 KPIs). This is the only confirmed unbuilt mart.
+- **Cross-Domain tab:** ~~Blocked by unbuilt `snap_cohort_milestone`~~ **CORRECTION (2026-09-26):** `snap_cohort_milestone` IS **BUILT in DEMEAU PROD** (1,138 rows). The Cross-Domain tab should be functional.
 - **`mart_enrollment_census_ntr`:** Built and functional, but DEMEAU synthetic data has zero billing values (`gross_tuition_billed=0`). Logic is complete and will activate with production school data.
 - **`snap_aid_term`:** PowerFAIDS integration pending affects `coa_amount`, `efc_amount` columns (unmet need calculations) in `mart_aid_leveraging`. Core leveraging metrics (merit/need split, aid band yield) are functional.
 - **NSC integration:** Pending; affects transfer-out tracking in retention models. Currently transfer-outs are counted with stop-outs.

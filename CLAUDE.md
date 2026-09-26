@@ -59,11 +59,11 @@ the gap.
     verified against a real, built model. Use this prefix instead of
     presenting an authored definition as confirmed fact.
 
-## Known gaps (as of 2026-07-22 reconciliation)
+## Known gaps (as of 2026-09-26 correction pass)
+
+**⚠️ CORRECTION (2026-09-26):** `snap_cohort_milestone` IS **BUILT in DEMEAU PROD** (1,138 rows in DEMEAU_DD_PROD, also in DEV/TEST). The Cross-Domain tab should be functional.
 
 **Unbuilt / Stub Models:**
-- `snap_cohort_milestone` — unbuilt; blocks Cross-Domain dashboard tab
-  and all Cross-Domain KPIs that target it.
 - `mart_ipeds_reporting` — stub returning zero rows; awaiting
   stg_ipeds__peer_benchmarks provisioning.
 
