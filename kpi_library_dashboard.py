@@ -3,7 +3,7 @@ KPI Library Demo Dashboard
 Streamlit in Snowflake — one page per Area, each showing live DEMEAU examples
 of every KPI/chart in the Ditteau KPI Library.
 
-Target database: DEMEAU_DD_DEV, schema: DISTRIBUTE
+Target database: DEMEAU_DD_PROD, schema: DISTRIBUTE
 """
 
 import streamlit as st
@@ -73,7 +73,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ── Constants ─────────────────────────────────────────────────────────────────
-DB     = "DEMEAU_DD_DEV"
+DB     = "DEMEAU_DD_PROD"
 SCHEMA = "DISTRIBUTE"
 MAROON = "#740049"
 NAVY   = "#13405a"

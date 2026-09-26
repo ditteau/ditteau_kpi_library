@@ -1,0 +1,20 @@
+definition_version: 2
+entities:
+  streamlit_app:
+    type: streamlit
+    main_file: kpi_library_dashboard.py
+    query_warehouse: DEMEAU_ANALYTICS_PROD
+    compute_pool: SYSTEM_COMPUTE_POOL_CPU
+    artifacts:
+      - pyproject.toml
+      - kpi_library_dashboard.py
+      - .streamlit/config.toml
+    identifier:
+      database: DEMEAU_DD_PROD
+      schema: DISTRIBUTE
+      name: KPI_LIBRARY_DASHBOARD
+    title: kpi_library_dashboard
+    run_mode: SpcsOnly
+    execute_as: OWNER
+    artifact_repositories:
+      - SNOWFLAKE.SNOWPARK.PYPI_SHARED_REPOSITORY

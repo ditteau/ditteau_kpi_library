@@ -1,0 +1,8 @@
+[project]
+name = "kpi_library_dashboard"
+version = "1.0.0"
+description = "Ditteau KPI Library Dashboard for Streamlit in Snowflake"
+dependencies = [
+    "plotly",
+    "pandas",
+]
