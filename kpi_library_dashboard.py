@@ -317,9 +317,23 @@ elif area == "Registration":
         SELECT
             COUNT(DISTINCT student_id)                                             AS total_students,
             AVG(cumulative_gpa)                                                    AS avg_gpa,
-            SUM(CASE WHEN is_sap_compliant = FALSE THEN 1 ELSE 0 END)             AS sap_non_compliant,
+            -- Renamed 2026-09-27. is_sap_compliant no longer exists: the column
+            -- never measured Satisfactory Academic Progress, it decoded CX's
+            -- enrolment/admission status through a code list that matched
+            -- neither tenant, so it returned TRUE for every row. This query
+            -- errored outright once the column was dropped.
+            --
+            -- 'active_warning' ONLY, not the negation of is_academic_standing_good:
+            -- that is also false for 'not_registerable', which means graduated and
+            -- withdrawn students as much as suspended ones.
+            SUM(CASE WHEN academic_standing_canonical = 'active_warning'
+                     THEN 1 ELSE 0 END)                                           AS poor_academic_standing,
+            -- on_track_gpa_flag is NULLABLE as of 2026-09-27 — NULL means no
+            -- graded coursework yet, not failing. `= TRUE` is null-safe here;
+            -- do not rewrite either limb as a negation.
             SUM(CASE WHEN on_track_gpa_flag = TRUE
-                      AND is_sap_compliant  = TRUE THEN 1 ELSE 0 END)             AS on_track
+                      AND academic_standing_canonical <> 'active_warning'
+                     THEN 1 ELSE 0 END)                                           AS on_track
         FROM {DB}.{SCHEMA}.MART_ACADEMIC_PROGRESS
     """)
 
@@ -396,11 +410,20 @@ elif area == "Registration":
             st.metric("Blocking Holds", "—")
     with c3:
         if not df_ap.empty and df_ap.iloc[0]["total_students"] > 0:
-            sap_rate = df_ap.iloc[0]["sap_non_compliant"] / df_ap.iloc[0]["total_students"]
-            st.metric("SAP Non-Compliance", fmt_pct(sap_rate),
-                      help="Students failing satisfactory academic progress")
+            # Relabelled 2026-09-27 along with the column rename. This tile read
+            # "SAP Non-Compliance", which it never measured — Ditteau has no SAP
+            # source at Merrimack at all, and at DEMEAU SAP lives in PowerFAIDS,
+            # not here. What this actually counts is enrolled students flagged
+            # for academic warning.
+            standing_rate = (df_ap.iloc[0]["poor_academic_standing"]
+                             / df_ap.iloc[0]["total_students"])
+            st.metric("Academic Warning", fmt_pct(standing_rate),
+                      help="Enrolled students whose academic standing carries a "
+                           "warning. NOT Satisfactory Academic Progress — SAP is "
+                           "a federal financial-aid determination and is not "
+                           "sourced in this mart.")
         else:
-            st.metric("SAP Non-Compliance", "—")
+            st.metric("Academic Warning", "—")
     with c4:
         if not df_ap.empty and pd.notna(df_ap.iloc[0]["avg_gpa"]):
             st.metric("Avg Cumulative GPA", fmt_num(df_ap.iloc[0]["avg_gpa"], 2),
