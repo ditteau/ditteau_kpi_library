@@ -25,13 +25,23 @@ def logo_header(title):
 
 
 # ── Snowflake session ──────────────────────────────────────────────────────────
-try:
-    from snowflake.snowpark.context import get_active_session
-    session = get_active_session()
-    SNOWFLAKE_MODE = True
-except Exception:
-    SNOWFLAKE_MODE = False
-    session = None
+def get_snowflake_session():
+    """Get Snowflake session, trying st.connection first (SPCS), then get_active_session."""
+    # Try st.connection first (works in SPCS mode)
+    try:
+        conn = st.connection("snowflake")
+        return conn.session()
+    except Exception:
+        pass
+    # Fall back to get_active_session (native SiS mode)
+    try:
+        from snowflake.snowpark.context import get_active_session
+        return get_active_session()
+    except Exception:
+        return None
+
+session = get_snowflake_session()
+SNOWFLAKE_MODE = session is not None
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
