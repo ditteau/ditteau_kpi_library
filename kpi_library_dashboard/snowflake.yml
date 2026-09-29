@@ -1,10 +1,19 @@
+# Streamlit in Snowflake app definition -- KPI_LIBRARY_DASHBOARD
+#
+# Deploy as DEMEAU_STREAMLIT_OWNER_IR_ANALYST_PROD_ROLE and no other role.
+# The owner role IS the entitlement: under owner's rights every query runs
+# as it, whoever is viewing. SYSADMIN will NOT work.
+#
+# Attach SNOWFLAKE.SNOWPARK.PYPI_SHARED_REPOSITORY in the dialog --
+# pyproject.toml declares dependencies and containers have no outbound network.
+
 definition_version: 2
 entities:
   streamlit_app:
     type: streamlit
-    main_file: kpi_library_dashboard.py
     query_warehouse: DEMEAU_ANALYTICS_PROD
-    compute_pool: SYSTEM_COMPUTE_POOL_CPU
+    compute_pool: DEMEAU_POOL_APPS_PROD
+    main_file: kpi_library_dashboard.py
     artifacts:
       - pyproject.toml
       - kpi_library_dashboard.py
@@ -13,7 +22,7 @@ entities:
       database: DEMEAU_DD_PROD
       schema: DISTRIBUTE
       name: KPI_LIBRARY_DASHBOARD
-    title: kpi_library_dashboard
+    title: Ditteau KPI Library
     run_mode: SpcsOnly
     execute_as: OWNER
     artifact_repositories:

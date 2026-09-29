@@ -25,7 +25,13 @@ def logo_header(title):
 
 
 # ── Snowflake session ──────────────────────────────────────────────────────────
-# Session obtained lazily in run_query to work with SPCS mode
+try:
+    from snowflake.snowpark.context import get_active_session
+    session = get_active_session()
+    SNOWFLAKE_MODE = True
+except Exception:
+    SNOWFLAKE_MODE = False
+    session = None
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -80,24 +86,9 @@ COLORS = [MAROON, NAVY, BLUE, GREEN, TAN, AMBER, RED]
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
-def _get_session():
-    """Get Snowflake session lazily - works in both native SiS and SPCS modes."""
-    # Try get_active_session first (native SiS)
-    try:
-        from snowflake.snowpark.context import get_active_session
-        return get_active_session()
-    except Exception:
-        pass
-    # Try st.connection (SPCS mode)
-    try:
-        return st.connection("snowflake").session()
-    except Exception:
-        return None
-
 @st.cache_data(ttl=3600)
 def run_query(sql: str) -> pd.DataFrame:
-    session = _get_session()
-    if session is None:
+    if not SNOWFLAKE_MODE or session is None:
         st.error("Snowflake session not available. Run in Streamlit in Snowflake.")
         return pd.DataFrame()
     try:
