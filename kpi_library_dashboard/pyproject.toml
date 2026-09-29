@@ -3,6 +3,7 @@ name = "kpi_library_dashboard"
 version = "1.0.0"
 description = "Ditteau KPI Library Dashboard for Streamlit in Snowflake"
 dependencies = [
+    "streamlit>=1.48.0",
     "plotly",
     "pandas",
 ]
