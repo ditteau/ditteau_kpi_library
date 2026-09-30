@@ -1,6 +1,0 @@
-name: kpi_library_dashboard
-channels:
-  - snowflake
-dependencies:
-  - pandas
-  - plotly

@@ -1,20 +1,18 @@
-# Ditteau KPI Library & Reference Dashboard
+# Ditteau KPI Library
 
-Higher-education KPI catalog, governance guidelines, and an example
-Streamlit-in-Snowflake dashboard, built on the Ditteau Data Unified
-Platform's Distribute layer.
+Higher-education KPI catalog and governance guidelines for the Ditteau Data
+Unified Platform's Distribute layer.
+
+**Note:** The Streamlit-in-Snowflake dashboard that visualizes these KPIs
+lives in `ditteau_data_transform/streamlit/dashboards/kpi_library/`.
 
 ## Repository Structure
 
 ```
 ├── higher_ed_kpi_catalog_enriched.csv   # Source of truth (162 rows, 7 Areas)
 ├── kpi_library.html                      # Browsable HTML mirror
-├── kpi_library_dashboard.py              # Streamlit-in-Snowflake dashboard
 ├── CLAUDE.md                             # Operating instructions for contributors
 ├── README.md
-├── environment.yml                       # SiS dependencies
-├── pyproject.toml
-├── snowflake.yml                         # Snowflake Native App config
 └── archive/                              # Historical reconciliation docs
 ```
 
@@ -26,7 +24,6 @@ Platform's Distribute layer.
 |---|---|
 | `higher_ed_kpi_catalog_enriched.csv` | The canonical KPI/dashboard catalog — 162 rows across 7 Areas (Enrollment Management, Admissions, Financial Aid, Registration, Cross-Domain, Benchmarking, Finance). Single source of truth for KPI definitions, calculation logic, and governance flags (FERPA, build status). |
 | `kpi_library.html` | A browsable, filterable version of the catalog (by Area / Type / Category), with calculation-logic tooltips. Mirrors the CSV — see "Keeping things in sync" below. |
-| `kpi_library_dashboard.py` | Streamlit-in-Snowflake reference dashboard, one tab per Area, showing live examples of catalog KPIs against the `DEMEAU_DD_DEV` demo data. |
 | `CLAUDE.md` | Operating instructions for Claude Code and human contributors — read this before editing any file. Defines source of truth, catalog conventions, governance gates, and platform conventions. |
 
 ### Archive
@@ -60,14 +57,6 @@ The 2026-07-22 reconciliation discovered two marts that were built but not docum
 - **`mart_enrollment_demographics`** — fully functional; powers Demographics dashboard visualizations
 - **`mart_scorecard_program_outcomes`** — fully functional; powers entire Benchmarking area with College Scorecard data (earnings, debt, default rates)
 
-## Running the dashboard
-
-This is a Streamlit-in-Snowflake app. It expects:
-- A Snowpark session via `get_active_session()` — falls back gracefully (no Snowflake calls) if run outside Snowflake.
-- `DB = "DEMEAU_DD_DEV"`, `SCHEMA = "DISTRIBUTE"` — update these constants near the top of `kpi_library_dashboard.py` to point at a different target.
-
-To preview locally with `streamlit run kpi_library_dashboard.py`, you'll need network access to a Snowflake account with those objects, or you'll want to stub out `run_query`.
-
 ## Governance
 
 Changes to this catalog aren't just a data edit — they're a governance action. See `CLAUDE.md` for the full governance model. Short version:
@@ -83,15 +72,15 @@ If a task would touch a FERPA-flagged KPI, a production merge, or peer-benchmark
 
 `higher_ed_kpi_catalog_enriched.csv` is canonical. If you add, rename, or re-categorize a KPI:
 
-1. Update the CSV first.
-2. Update the matching `DATA` entry and `METRIC_INFO` tooltip in `kpi_library.html`.
-3. Update the corresponding dashboard section in `kpi_library_dashboard.py` — or add an honest Roadmap stub if the mart isn't built yet.
+1. Update the CSV first (this repo).
+2. Update the matching `DATA` entry and `METRIC_INFO` tooltip in `kpi_library.html` (this repo).
+3. Update the corresponding dashboard section in `ditteau_data_transform/streamlit/dashboards/kpi_library/kpi_library_dashboard.py` — or add an honest Roadmap stub if the mart isn't built yet.
 4. Re-check the Area / Type / FERPA counts in the guidelines doc if they've shifted.
 
-**These three artifacts have drifted out of sync before.** The 2026-07-22 reconciliation found 29 rows (21%) with incorrect status claims. Don't reintroduce the gap:
+**These artifacts have drifted out of sync before.** The 2026-07-22 reconciliation found 29 rows (21%) with incorrect status claims. Don't reintroduce the gap:
 - Never mark a mart "NOT YET COMPUTABLE" without verifying it doesn't exist in `ditteau_data_transform`
 - Never add a dashboard query without confirming the target mart/columns exist
-- Never update calculation logic in one place without updating the other two
+- Never update calculation logic in one place without updating all three
 
 ## Catalog conventions
 
@@ -110,6 +99,9 @@ Per `CLAUDE.md`:
 ## Recent changes
 
 ### 2026-09
+- **Consolidated dashboards:** Removed `kpi_library_dashboard/` folder; the
+  single canonical dashboard now lives in `ditteau_data_transform/streamlit/
+  dashboards/kpi_library/`. This repo is now purely catalog & governance.
 - Archived historical reconciliation docs to `archive/` folder
 - Added `.gitignore` for cache, backup, and draft files
 

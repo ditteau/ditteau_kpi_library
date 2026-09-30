@@ -5,13 +5,14 @@ Read this before editing any file here.
 
 ## What this repo is
 
-A KPI catalog, reference library page, and example dashboard for the
-Ditteau Data Unified Platform — a multi-tenant higher-ed analytics product
-built on Snowflake (Deposit → Deterge → Distribute medallion architecture,
-dbt-managed from Deterge up). This repo is the KPI Library workstream:
-governed KPI definitions plus a Streamlit-in-Snowflake reference dashboard
-that reads from the Distribute layer. **It does not contain the dbt models
-themselves** — those live in the main platform repo - ditteau_data_transform.
+A KPI catalog and reference library page for the Ditteau Data Unified
+Platform — a multi-tenant higher-ed analytics product built on Snowflake
+(Deposit → Deterge → Distribute medallion architecture, dbt-managed from
+Deterge up). This repo is the KPI Library workstream: governed KPI
+definitions and the browsable HTML reference. **It does not contain the
+dbt models or the Streamlit dashboard** — those live in
+`ditteau_data_transform` (dbt models in `/models`, dashboard in
+`/streamlit/dashboards/kpi_library`).
 
 ## Source of truth
 
@@ -20,18 +21,18 @@ from it:
 
 - `kpi_library.html` is a browsable mirror — its `DATA` array and
   `METRIC_INFO` map must match the CSV row-for-row.
-- `kpi_library_dashboard.py` should only visualize KPIs the catalog marks
-  as actually computable — never one whose `Calculation Logic` reads
-  `NOT YET COMPUTABLE`, `NO CONFIDENT MATCH`, or `PROPOSED`.
+- The Streamlit dashboard (`ditteau_data_transform/streamlit/dashboards/
+  kpi_library/kpi_library_dashboard.py`) should only visualize KPIs the
+  catalog marks as actually computable — never one whose `Calculation Logic`
+  reads `NOT YET COMPUTABLE`, `NO CONFIDENT MATCH`, or `PROPOSED`.
 - `Ditteau_KPI_Dashboard_Guidelines.docx` is the process document — read
   Section E (targets/thresholds) and Section F (governance/FERPA) before
   changing how a KPI is presented.
 
-**If you edit one of the three files above, check whether the other two
-need the same edit.** They have drifted before, and reconciling that drift
-was real, non-trivial work (cross-referencing dashboard query code against
-catalog claims to figure out what was actually true) — don't reintroduce
-the gap.
+**If you edit the CSV or HTML here, check whether the dashboard in
+`ditteau_data_transform` needs the same edit.** These artifacts have drifted
+before, and reconciling that drift was real, non-trivial work — don't
+reintroduce the gap.
 
 ## Catalog conventions
 
@@ -119,7 +120,7 @@ The following decisions are settled and should not be relitigated:
 ## Finance Vocabulary Additions (2026-08)
 
 **Area:** `Finance` added to `AREA_ORDER` in `kpi_library.html` and to
-`st.radio` Area list in `kpi_library_dashboard.py`.
+`st.radio` Area list in the dashboard (`ditteau_data_transform`).
 
 **Update Frequency:** `Monthly` — twelve of the 24 Finance rows use this;
 finance operates on fiscal periods rather than academic terms. Do not
