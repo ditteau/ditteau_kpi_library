@@ -67,6 +67,60 @@ reintroduce the gap.
 **Unbuilt / Stub Models:**
 - `mart_ipeds_reporting` — stub returning zero rows; awaiting
   stg_ipeds__peer_benchmarks provisioning.
+- `mart_aid_leveraging` — 2 rows in DEMEAU PROD `[SNOWFLAKE-VERIFIED
+  2026-10-01]`. Still a stub; row 145 is a scope expansion of it, not a new mart.
+
+**⚠️ Finance lineage (added to this section 2026-10-01 — it predated the GL
+work entirely and said nothing about it):**
+
+- **The General Ledger IS ingested on the Jenzabar CX arm.** Several catalog
+  rows asserted "no G/L source ingested"; that was false and rows 140 and 141
+  have been corrected. Measured in `DEMEAU_DD_PROD` 2026-10-01:
+
+  | Model | Rows |
+  |---|---|
+  | `int_gl_account_balances` | 2,975,685 (154,384 accounts, 19 fiscal years) |
+  | `int_subsidiary_balances` | 921,770 |
+
+  345 GL accounts carry `is_cash_account`; `net_asset_type_code` is populated
+  (`U`/`T`/`P`).
+
+- ⚠️ **Scope the claim by source arm.** This is **Jenzabar CX**, which arrives
+  by Snowflake share. The **J1** arm — Merrimack's and DEMEAU's primary SIS —
+  has six `stg_j1__*` finance staging models built over **empty** deposit
+  tables and no intermediate at all. "G/L is ingested" is true of the platform
+  and **false of Merrimack**. Never write the unqualified form.
+
+- ⚠️ **`seed_gl_object_classification` does not exist, and it is the single
+  highest-leverage gap in the Finance set.** Nothing in the platform knows
+  which GL object codes are revenue, expense, asset or liability. One seed
+  blocks or materially limits **seven** KPIs: 143, 144, 150, 152, 155, 156, 160.
+
+  Both built finance marts name this gap and refuse to guess —
+  `mart_finance_budget_variance` calls `object_code_leading_digit` "AN
+  OBSERVATION, NOT A CLASSIFICATION", and `mart_ar_aging` declines the DSO
+  denominator for the same reason. `docs/designs/mart_finance_cash_position_design.md`
+  in `ditteau_data_transform` reaches the same conclusion independently.
+
+  It is a **governance seed, not a lookup table** — same class as
+  `seed_hold_domain_crosswalk`. Every row records a human accounting
+  classification and carries its classifier and date. It is also
+  **tenant-specific**: a chart of accounts is an institutional artifact and
+  DEMEAU's classification does not transfer to Merrimack.
+
+- ⚠️ `gasb_category_code` is null on all GL rows at DEMEAU and that is
+  **expected, not a gap** — DEMEAU is pseudonymised Anselm data and Anselm
+  reports under FASB. **Do not build a CFI on it.**
+
+- ⚠️ **C-22 is a live defect**, not a future risk. `stg_jcx__subsidiary_balances`
+  casts four columns to boolean on an assumed, unverified `Y`/`N` domain —
+  `hld_pmt`, `disc_taken`, `single_ck`, `interest_wvd`. Anything reading those
+  booleans today may be reading nulls, with no error. Row 163 depends on
+  `is_discount_taken` and is flagged accordingly.
+
+**Full gap analysis:** `ditteau_data_transform/docs/kpi_catalog/finance_kpi_support_gap_analysis.md`
+(2026-10-01) — all 24 finance KPIs traced to the facts, dimensions, staging
+models and seeds they need, with a recommended build sequence.
 
 **Data Gaps in Built Models:**
 - `snap_aid_term` — PowerFAIDS integration pending; affects
@@ -139,20 +193,43 @@ coerce to `Term`.
 
 (`Bursar` and `CFO` already exist in the vocabulary.)
 
-## Proposed Finance Marts (not yet designed)
+## Finance Marts — built vs. proposed
 
-The following `(proposed) mart_*` names appear in the Finance rows. These
-are **not built models** — do not create dbt models for them without an
-LVP decision. The `(proposed)` prefix distinguishes them from built marts
-at a glance.
+**⚠️ CORRECTED 2026-10-01.** Two of the seven names below were built and
+deployed to DEMEAU PROD and this list had not caught up. The CSV already knew —
+rows 154, 156, 157 and 160 carry bare mart names — so the CSV was right and this
+section was the stale one, which is the ordering the source-of-truth rule
+predicts.
+
+**Built and deployed** `[SNOWFLAKE-VERIFIED 2026-10-01, role DEMEAU_DBT_PROD]`:
+
+| Mart | Rows in `DEMEAU_DD_PROD` | Serves |
+|---|---|---|
+| `mart_finance_budget_variance` | 57,005 | Rows 154, 156 |
+| `mart_ar_aging` | 5 | Rows 146, 157, 160 |
+
+⚠️ Both read Deterge intermediates directly — there is **no finance fact or
+dimension** in the lineage. `dim_fiscal_period` exists in DEMEAU **DEV only**
+(785 rows); it is **not in PROD**.
+
+**Still proposed — not built models.** Do not create dbt models for these
+without an LVP decision. The `(proposed)` prefix distinguishes them at a glance.
 
 - `(proposed) mart_program_economics`
 - `(proposed) mart_student_value`
 - `(proposed) mart_finance_ratios`
-- `(proposed) mart_finance_budget_variance`
-- `(proposed) mart_ar_aging`
 - `(proposed) mart_ap_performance`
 - `(proposed) mart_auxiliary_revenue`
+
+⚠️ **`mart_ap_performance` is blocked on absent data, not on effort.** The CX
+A/P archive is settled: 794,634 `financial`-domain balance rows, **80** with a
+non-zero amount `[SNOWFLAKE-VERIFIED 2026-10-01]`. There is no payables position
+to age, no payment-date column, and `purchase_order_number`'s modal value is
+`'0'`. Do not sequence its four KPIs (158, 159, 161, 162, 163) as though effort
+were the constraint.
+
+⚠️ **`mart_auxiliary_revenue` needs a housing/residence-life source that is not
+in the platform's source inventory at all.** Defer until one is scoped.
 
 ## Finance Integration Findings — Pending Human Decision
 
@@ -179,12 +256,38 @@ These require human decisions. Do not act on them; record and surface.
    finance-ERP vocabulary, or that row is reflagged `PROPOSED` alongside
    the Finance set. Do not change it without LVP decision.
 
-**3. Possible undocumented AR data in the platform.**
-   RDT reports that Jenzabar CX's `sbcust_rec` billing table already feeds
+**3. ~~Possible undocumented AR data in the platform.~~ RESOLVED 2026-10-01 —
+   but one live gap carries forward; read on before closing this.**
+
+   ~~RDT reports that Jenzabar CX's `sbcust_rec` billing table already feeds
    `mart_enrollment_census_ntr`. If correct, student-account data is flowing
    without a `DATA_DOMAIN = FINANCE` tag and without having passed KKM
-   review. **This is a governance exposure.** Do not trace, modify, or
-   retag the lineage yourself. Surface to KKM and LVP.
+   review.~~
+
+   The lineage is **not undocumented**. `int_subsidiary_balances` is an
+   explicitly domain-tagged model: it emits a `data_domain` column routing
+   student receivables to `student_accounts` and institutional payables to
+   `financial`, and `mart_ar_aging` filters `where data_domain =
+   'student_accounts'` downstream. `[REPO-VERIFIED 2026-10-01]` The model header
+   documents the split at length, including why employee-facing subsidiaries
+   (`W/P`, `E/P`, `FSMP`) have no home in the domain grid.
+
+   ⚠️ **DO NOT CLOSE THIS ITEM WITHOUT CARRYING FORWARD THE GAP INSIDE IT.**
+   There is **no `rap_student_accounts` row access policy.** The account holds
+   four RAPs — `student_academic`, `admissions`, `financial_aid`,
+   `student_health` — and none for receivables. `mart_ar_aging` works around
+   this by publishing no `account_holder_id` at all, aggregating to
+   subsidiary × aging bucket precisely because student-level balances are an
+   education record.
+
+   This is the hard blocker on rows **141** (Student LTV), **146** (Bad-Debt
+   Risk Score) and any AR drill-through. **The RAP comes first — it is not a
+   modelling detail and must not be resolved by adding `student_id` to
+   `mart_ar_aging`.** Owner: **KKM**.
+
+   ⚠️ Row 146 carries a second question beyond FERPA: predictive delinquency
+   scoring joined to academic-risk signals raises a **use-limitation** issue
+   (risk of adverse action against students). KKM review before it leaves draft.
 
 ## Governance gates — do not route around these
 
